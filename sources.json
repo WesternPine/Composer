@@ -1,0 +1,12 @@
+{
+  "version": "v1",
+  "workflowSources": [
+    {
+      "id": "dev.westernpine.composer.runtime.loader.JsonFileWorkflowLoader",
+      "uri": "./workflows",
+      "username": null,
+      "password": null,
+      "data": null
+    }
+  ]
+}
