@@ -5,17 +5,18 @@ import dev.westernpine.composer.api.WorkflowLoader;
 import dev.westernpine.composer.api.WorkflowLoaderFactory;
 import dev.westernpine.composer.model.config.WorkflowSource;
 import dev.westernpine.composer.utilities.reflection.ConstructorUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DefaultWorkflowLoaderFactory implements WorkflowLoaderFactory {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultWorkflowLoaderFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(
+        DefaultWorkflowLoaderFactory.class
+    );
 
     private final Engine engine;
     private final Map<String, WorkflowLoader> loaders = new HashMap<>();
@@ -29,44 +30,63 @@ public class DefaultWorkflowLoaderFactory implements WorkflowLoaderFactory {
         String nonNullId = Objects.requireNonNull(id, "id");
         WorkflowLoader cachedLoader = loaders.get(nonNullId);
         if (cachedLoader != null) {
-            LOGGER.debug("Returning cached workflow loader for id '{}'", nonNullId);
+            LOGGER.debug(
+                "Returning cached workflow loader for id '{}'",
+                nonNullId
+            );
             return Optional.of(cachedLoader);
         }
 
-        return engine.getConfig()
-                .workflowSources()
-                .stream()
-                .filter(Objects::nonNull)
-                .filter(source -> nonNullId.equals(source.id()))
-                .findFirst()
-                .flatMap(this::instantiateLoader)
-                .map(loader -> {
-                    LOGGER.info("Caching new workflow loader '{}' for source id '{}'", loader.getClass().getName(), nonNullId);
-                    loaders.put(nonNullId, loader);
-                    return loader;
-                });
+        return engine
+            .getConfig()
+            .workflowSources()
+            .stream()
+            .filter(Objects::nonNull)
+            .filter(source -> nonNullId.equals(source.id()))
+            .findFirst()
+            .flatMap(this::instantiateLoader)
+            .map(loader -> {
+                LOGGER.info(
+                    "Caching new workflow loader '{}' for source id '{}'",
+                    loader.getClass().getName(),
+                    nonNullId
+                );
+                loaders.put(nonNullId, loader);
+                return loader;
+            });
     }
 
     private Optional<WorkflowLoader> instantiateLoader(WorkflowSource source) {
         try {
-            Class<?> sourceClass = Class.forName(source.type());
+            Class<?> sourceClass = Class.forName(source.id());
 
             if (!WorkflowLoader.class.isAssignableFrom(sourceClass)) {
-                LOGGER.warn("Type '{}' for workflow source '{}' does not implement WorkflowLoader", source.type(), source.id());
+                LOGGER.warn(
+                    "Workflow source '{}' does not implement WorkflowLoader",
+                    source.id()
+                );
                 return Optional.empty();
             }
 
-            Object[] parameters = new Object[]{engine, source};
+            Object[] parameters = new Object[] { engine, source };
 
-            LOGGER.debug("Instantiating workflow loader '{}' for source '{}'", sourceClass.getName(), source.id());
+            LOGGER.debug(
+                "Instantiating workflow loader '{}' for source '{}'",
+                sourceClass.getName(),
+                source.id()
+            );
             return ConstructorUtils.createInstance(
-                    sourceClass,
-                    parameters,
-                    Engine.class, WorkflowSource.class
+                sourceClass,
+                parameters,
+                Engine.class,
+                WorkflowSource.class
             ).map(WorkflowLoader.class::cast);
-
         } catch (Exception e) {
-            LOGGER.error("Failed to instantiate workflow loader for source '{}'", source.id(), e);
+            LOGGER.error(
+                "Failed to instantiate workflow loader for source '{}'",
+                source.id(),
+                e
+            );
             return Optional.empty();
         }
     }
